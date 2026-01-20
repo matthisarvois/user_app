@@ -15,9 +15,3 @@ app = FastAPI(title="User API")
 app.include_router(health_router)
 app.include_router(users_router)
 
-
-@app.on_event("startup")
-async def startup():
-    # On ouvre une connexion (async) et on crée les tables manquantes
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
