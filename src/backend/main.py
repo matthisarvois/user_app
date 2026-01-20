@@ -1,18 +1,23 @@
 from fastapi import FastAPI
-from src.backend.api.routes.health import router as health_router
 
-# On importe engine juste pour vérifier que le fichier session.py
-# est correct et que SQLAlchemy arrive à créer le moteur.
+from src.backend.api.routes.health import router as health_router
+from src.backend.api.routes.users import router as users_router
+
 from src.backend.db.session import engine
+from src.backend.db.base import Base
+
+# IMPORTANT : importer le modèle pour que SQLAlchemy "connaisse" la table
+from src.backend.models.user import User  # noqa: F401
+
 
 app = FastAPI(title="User API")
-app.include_router(health_router)
 
-# On déclare une fonction "startup" : FastAPI l'exécute
-# automatiquement au démarrage de l'application.
-#
-# Conséquence : si ta DB URL est mauvaise ou si aiosqlite manque,
-# tu le verras dès le démarrage (erreur immédiate).
+app.include_router(health_router)
+app.include_router(users_router)
+
+
 @app.on_event("startup")
 async def startup():
-    _ = engine  # on touche la variable pour confirmer que l'import marche
+    # On ouvre une connexion (async) et on crée les tables manquantes
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
